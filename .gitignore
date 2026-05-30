@@ -1,2 +1,7 @@
 plan.md
 data/
+.venv/
+__pycache__/
+.python-version
+.ipynb_checkpoints/
+pipeline/explore.md
