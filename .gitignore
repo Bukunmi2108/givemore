@@ -5,3 +5,4 @@ __pycache__/
 .python-version
 .ipynb_checkpoints/
 pipeline/explore.md
+pipeline/build.md
