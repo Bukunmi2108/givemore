@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0c0f" />
+    <style>
+      html {
+        background-color: #0b0c0f;
+        color-scheme: dark;
+      }
+    </style>
+    <title>Movie — givemore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="site-header compact">
+      <a class="back-link" href="/">&larr; givemore<span class="accent">.</span></a>
+    </header>
+
+    <main class="movie-page">
+      <section id="movie-error" class="gate" hidden>
+        <p id="movie-error-message">Could not load this movie.</p>
+        <a class="button-link" href="/">Back to recommendations</a>
+      </section>
+
+      <section id="movie-hero" class="hero">
+        <p class="hero-kicker">Movie</p>
+        <h1 id="hero-title" class="hero-title">&nbsp;</h1>
+        <p id="hero-meta" class="hero-meta"></p>
+      </section>
+
+      <section id="similar-panel" class="panel">
+        <div class="section-head">
+          <div>
+            <h2>Similar movies</h2>
+            <p id="similar-note" class="section-note"></p>
+          </div>
+        </div>
+        <div id="similar-list" class="card-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <template id="movie-card">
+      <a class="movie-card">
+        <div class="mc-topline">
+          <span class="mc-rank"></span>
+          <span class="mc-year"></span>
+        </div>
+        <h3 class="mc-title"></h3>
+        <p class="mc-genres"></p>
+      </a>
+    </template>
+
+    <script type="module" src="/src/movie.ts"></script>
+  </body>
+</html>

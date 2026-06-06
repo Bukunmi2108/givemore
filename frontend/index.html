@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0c0f" />
+    <style>
+      html {
+        background-color: #0b0c0f;
+        color-scheme: dark;
+      }
+    </style>
+    <title>givemore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body data-app-state="checking">
+    <header class="site-header">
+      <div>
+        <h1>givemore<span class="accent">.</span></h1>
+        <p class="tagline">MovieLens recommendations for demo profiles and discovery.</p>
+      </div>
+      <dl id="stats" class="stats" aria-label="Dataset stats"></dl>
+    </header>
+
+    <section id="gate-checking" class="gate" aria-live="polite">
+      <span class="pulse" aria-hidden="true"></span>
+      <p>Checking recommendation engine...</p>
+    </section>
+
+    <section id="gate-waking" class="gate" aria-live="polite">
+      <span class="pulse" aria-hidden="true"></span>
+      <p>Waking up the recommendation engine. This can take a few seconds.</p>
+    </section>
+
+    <section id="gate-failed" class="gate" aria-live="polite">
+      <p>Recommendation engine unavailable.</p>
+      <button id="retry-btn" type="button">Retry</button>
+      <small id="api-url"></small>
+    </section>
+
+    <main id="app">
+      <section id="user-section" class="panel">
+        <div class="section-head">
+          <div>
+            <h2>Recommendations</h2>
+            <p id="rec-label" class="section-note"></p>
+          </div>
+          <form id="user-form" class="inline-form">
+            <label for="user-input">User</label>
+            <input id="user-input" type="number" min="1" inputmode="numeric" value="414" />
+            <button type="submit">Go</button>
+          </form>
+        </div>
+        <div id="quick-picks" class="quick-picks" aria-label="Demo users"></div>
+        <div id="rec-list" class="card-grid" aria-live="polite"></div>
+      </section>
+
+      <section id="search-section" class="panel">
+        <div class="section-head">
+          <div>
+            <h2>Find a movie</h2>
+            <p class="section-note">Click any result to inspect similar movies.</p>
+          </div>
+          <label class="search-box" for="search-input">
+            <span>Search</span>
+            <input id="search-input" type="search" placeholder="e.g. matrix" autocomplete="off" />
+          </label>
+        </div>
+        <div id="search-list" class="card-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <template id="movie-card">
+      <a class="movie-card">
+        <div class="mc-topline">
+          <span class="mc-rank"></span>
+          <span class="mc-year"></span>
+        </div>
+        <h3 class="mc-title"></h3>
+        <p class="mc-genres"></p>
+      </a>
+    </template>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
