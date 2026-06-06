@@ -12,7 +12,7 @@ pinned: false
 
 A MovieLens movie recommender — simple, reproducible, deployable, and honest about its limits.
 
-**Live:** frontend on Vercel · API on this Hugging Face Space
+**Live:** [givemore-one.vercel.app](https://givemore-one.vercel.app) · API: [bukunmi2108-givemore.hf.space](https://bukunmi2108-givemore.hf.space/docs)
 
 ## How it works
 
