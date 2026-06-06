@@ -33,7 +33,9 @@ BLOCK = 512             # row-block size for content top-k
 def load(data_dir):
     ratings = pd.read_csv(data_dir / "ratings.csv")
     movies = pd.read_csv(data_dir / "movies.csv")
-    links = pd.read_csv(data_dir / "links.csv")
+    # imdbId MUST stay a string: it is zero-padded ("0114709") and pandas would
+    # otherwise parse it as an integer, destroying every IMDb URL downstream.
+    links = pd.read_csv(data_dir / "links.csv", dtype={"imdbId": "string"})
 
     assert set(ratings.columns) == {"userId", "movieId", "rating", "timestamp"}
     assert set(movies.columns) == {"movieId", "title", "genres"}
@@ -252,12 +254,36 @@ def build_summary(ratings, movies):
 
 
 # --- Stage 11: assemble output tables + write SQLite ---
-def assemble_tables(movies, user_stats, movie_stats, weighted_scores):
+def assemble_tables(movies, user_stats, movie_stats, weighted_scores, links):
     # movies table from Stage-2 metadata (all 9,742 - NOT movie_stats, missing the 18 unrated)
     movies_table = movies[["movieId", "title", "genres", "Year"]].rename(
         columns={"movieId": "movie_id", "Year": "year"}
     )
     movies_table["year"] = pd.to_numeric(movies_table["year"]).astype("Int64")  # nullable
+
+    # external ids from links.csv (Q17 proved 1:1 coverage)
+    links_table = links.rename(
+        columns={"movieId": "movie_id", "imdbId": "imdb_id", "tmdbId": "tmdb_id"}
+    )
+    movies_table = movies_table.merge(links_table, on="movie_id", how="left")
+    movies_table["tmdb_id"] = movies_table["tmdb_id"].astype("Int64")  # nullable
+
+    assert movies_table["imdb_id"].notna().all()
+    assert (movies_table["imdb_id"].str.len() == 7).all()  # zero-padding intact
+    assert movies_table["tmdb_id"].isna().sum() == 8  # known dataset gap
+
+    # poster paths from the TMDB enrichment (fetch_posters.py -> data/tmdb_posters.csv)
+    posters = pd.read_csv(
+        Path(__file__).resolve().parent.parent / "data" / "tmdb_posters.csv",
+        dtype={"tmdb_id": "Int64", "poster_path": "string"},
+    )
+    movies_table = movies_table.merge(posters, on="tmdb_id", how="left")
+    movies_table["poster_path"] = movies_table["poster_path"].replace("", pd.NA)
+
+    assert movies_table.shape[0] == 9742  # unique-keyed merge must not fan out
+    has_poster = movies_table["poster_path"].notna()
+    assert movies_table.loc[has_poster, "poster_path"].str.startswith("/").all()
+    assert has_poster.mean() >= 0.9  # loose floor: TMDB content shifts over time
 
     users_table = user_stats.reset_index().rename(
         columns={"userId": "user_id", "count": "rating_count", "mean": "avg_rating"}
@@ -283,7 +309,10 @@ CREATE TABLE movies (
     movie_id INTEGER PRIMARY KEY,
     title TEXT NOT NULL,
     genres TEXT NOT NULL,
-    year INTEGER
+    year INTEGER,
+    imdb_id TEXT NOT NULL,
+    tmdb_id INTEGER,
+    poster_path TEXT
 );
 CREATE TABLE users (
     user_id INTEGER PRIMARY KEY,
@@ -388,7 +417,7 @@ def main():
     args = parser.parse_args()
 
     print("stage 1: load + integrity")
-    ratings, movies, _links = load(args.data_dir)  # links only needed for integrity checks
+    ratings, movies, links = load(args.data_dir)
 
     print("stage 2: clean movie metadata")
     movies = clean_movies(movies)
@@ -423,7 +452,7 @@ def main():
 
     print("stage 11: assemble tables + write SQLite")
     movies_table, users_table, popular_movies = assemble_tables(
-        movies, user_stats, movie_stats, weighted_scores
+        movies, user_stats, movie_stats, weighted_scores, links
     )
     write_db(args.db_path, movies_table, users_table, popular_movies,
              user_recommendations, movie_similarity, ratings_summary)

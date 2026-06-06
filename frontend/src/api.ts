@@ -12,16 +12,22 @@ export interface Stats {
   rating_count: number;
 }
 
-export interface MovieDetail {
+export interface MovieSummary {
   movie_id: number;
   title: string;
   genres: string[];
   year: number | null;
+  poster_path: string | null;
 }
 
-export interface MovieItem extends MovieDetail {
+export interface MovieItem extends MovieSummary {
   rank: number;
   score: number;
+}
+
+export interface MovieDetail extends MovieSummary {
+  imdb_id: string;
+  tmdb_id: number | null;
 }
 
 export interface Recommendations {
@@ -63,9 +69,9 @@ export function getRecommendations(userId: number): Promise<Recommendations> {
   return get<Recommendations>(`/users/${userId}/recommendations`);
 }
 
-export async function searchMovies(q: string, limit = 12): Promise<MovieDetail[]> {
+export async function searchMovies(q: string, limit = 12): Promise<MovieSummary[]> {
   const params = new URLSearchParams({ q, limit: String(limit) });
-  const result = await get<{ query: string; items: MovieDetail[] }>(`/movies?${params}`);
+  const result = await get<{ query: string; items: MovieSummary[] }>(`/movies?${params}`);
   return result.items;
 }
 

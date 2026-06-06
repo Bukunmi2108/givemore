@@ -40,6 +40,7 @@ def test_popular(client):
     assert first["rank"] == 1
     assert first["movie_id"] == 318  # Shawshank
     assert isinstance(first["genres"], list)
+    assert first["poster_path"].startswith("/")  # grids need posters: summary carries the path
 
 
 def test_popular_rejects_limit_beyond_stored_rows(client):
@@ -70,6 +71,27 @@ def test_movie_detail(client):
     assert body["title"] == "Toy Story"
     assert body["year"] == 1995
     assert body["genres"] == ["Adventure", "Animation", "Children", "Comedy", "Fantasy"]
+    assert body["imdb_id"] == "0114709"  # zero-padding intact -> imdb.com/title/tt0114709/
+    assert body["tmdb_id"] == 862
+    assert body["poster_path"].startswith("/")  # image.tmdb.org/t/p/{size}{poster_path}
+
+
+def test_movie_detail_tmdb_id_is_nullable(client):
+    response = client.get("/movies/791")  # one of the 8 movies with no TMDB id
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["imdb_id"] == "0113610"
+    assert body["tmdb_id"] is None
+    assert body["poster_path"] is None  # no tmdb id -> no poster
+
+
+def test_search_items_stay_lean(client):
+    response = client.get("/movies", params={"q": "matrix", "limit": 1})
+
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert "imdb_id" not in item  # links are detail-page only; list payloads stay summary-shaped
 
 
 def test_movie_detail_unknown_returns_404(client):

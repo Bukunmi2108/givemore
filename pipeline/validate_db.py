@@ -42,7 +42,7 @@ INDEXES = {"idx_user_recommendations_user_id", "idx_movie_similarity_movie_id",
            "idx_movies_title", "idx_popular_movies_rank"}
 
 SCHEMA = {
-    "movies": {"movie_id", "title", "genres", "year"},
+    "movies": {"movie_id", "title", "genres", "year", "imdb_id", "tmdb_id", "poster_path"},
     "users": {"user_id", "rating_count", "avg_rating"},
     "popular_movies": {"rank", "movie_id", "score", "rating_count", "avg_rating"},
     "user_recommendations": {"user_id", "rank", "movie_id", "score"},
@@ -249,6 +249,32 @@ def e5(conn):
     # validate the math property, not float noise -> tolerance 1e-9
     n = scalar(conn, "SELECT COUNT(*) FROM movie_similarity WHERE score < -1e-9 OR score > 1.000000001")
     return (n == 0, f"{n} out of range" if n else "")
+
+
+@check("E6 imdb_id present and 7-digit zero-padded for all movies")
+def e6(conn):
+    n = scalar(conn, """
+        SELECT COUNT(*) FROM movies
+        WHERE imdb_id IS NULL
+           OR LENGTH(imdb_id) != 7
+           OR imdb_id NOT GLOB '[0-9][0-9][0-9][0-9][0-9][0-9][0-9]'""")
+    return (n == 0, f"{n} bad rows" if n else "")
+
+
+@check("E7 tmdb_id nullable with exactly the 8 known gaps")
+def e7(conn):
+    nulls = scalar(conn, "SELECT COUNT(*) FROM movies WHERE tmdb_id IS NULL")
+    bad = scalar(conn, "SELECT COUNT(*) FROM movies WHERE tmdb_id IS NOT NULL AND tmdb_id < 1")
+    return (nulls == 8 and bad == 0, f"{nulls} nulls, {bad} non-positive")
+
+
+@check("E8 poster_path well-formed with >=90% coverage")
+def e8(conn):
+    bad = scalar(conn, "SELECT COUNT(*) FROM movies WHERE poster_path IS NOT NULL AND poster_path NOT LIKE '/%'")
+    have = scalar(conn, "SELECT COUNT(*) FROM movies WHERE poster_path IS NOT NULL")
+    total = scalar(conn, "SELECT COUNT(*) FROM movies")
+    ok = bad == 0 and have >= total * 0.9  # loose floor: TMDB content shifts over time
+    return (ok, f"{have}/{total} posters, {bad} malformed")
 
 
 # --- F. API-contract checks (phrased as the backend will query) ---

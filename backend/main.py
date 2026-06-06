@@ -9,6 +9,7 @@ from backend.schemas import (
     HealthResponse,
     MovieDetail,
     MovieItem,
+    MovieSummary,
     PopularResponse,
     RecommendationsResponse,
     SearchResponse,
@@ -40,8 +41,19 @@ def to_movie_item(row: dict) -> MovieItem:
         title=row["title"],
         genres=split_genres(row["genres"]),
         year=row["year"],
+        poster_path=row["poster_path"],
         rank=row["rank"],
         score=row["score"],
+    )
+
+
+def to_movie_summary(row: dict) -> MovieSummary:
+    return MovieSummary(
+        movie_id=row["movie_id"],
+        title=row["title"],
+        genres=split_genres(row["genres"]),
+        year=row["year"],
+        poster_path=row["poster_path"],
     )
 
 
@@ -51,6 +63,9 @@ def to_movie_detail(row: dict) -> MovieDetail:
         title=row["title"],
         genres=split_genres(row["genres"]),
         year=row["year"],
+        poster_path=row["poster_path"],
+        imdb_id=row["imdb_id"],
+        tmdb_id=row["tmdb_id"],
     )
 
 
@@ -58,7 +73,7 @@ def fetch_popular(db: sqlite3.Connection, limit: int) -> list[MovieItem]:
     rows = query_database(
         db,
         """
-        SELECT pm.rank, pm.movie_id, m.title, m.genres, m.year, pm.score
+        SELECT pm.rank, pm.movie_id, m.title, m.genres, m.year, m.poster_path, pm.score
         FROM popular_movies pm
         JOIN movies m ON m.movie_id = pm.movie_id
         ORDER BY pm.rank
@@ -121,7 +136,7 @@ def search_movies(
     rows = query_database(
         db,
         """
-        SELECT movie_id, title, genres, year
+        SELECT movie_id, title, genres, year, poster_path
         FROM movies
         WHERE ? = '%%' OR title LIKE ?
         ORDER BY title
@@ -129,14 +144,14 @@ def search_movies(
         """,
         (search, search, limit),
     )
-    return SearchResponse(query=q, items=[to_movie_detail(row) for row in rows])
+    return SearchResponse(query=q, items=[to_movie_summary(row) for row in rows])
 
 
 @app.get("/movies/{movie_id}", response_model=MovieDetail)
 def get_movie(movie_id: int, db: sqlite3.Connection = Depends(get_db)):
     rows = query_database(
         db,
-        "SELECT movie_id, title, genres, year FROM movies WHERE movie_id = ?",
+        "SELECT movie_id, title, genres, year, imdb_id, tmdb_id, poster_path FROM movies WHERE movie_id = ?",
         (movie_id,),
     )
     if not rows:
@@ -158,6 +173,7 @@ def get_similar_movies(movie_id: int, db: sqlite3.Connection = Depends(get_db)):
             m.title,
             m.genres,
             m.year,
+            m.poster_path,
             ms.score
         FROM movie_similarity ms
         JOIN movies m ON m.movie_id = ms.similar_movie_id
@@ -187,6 +203,7 @@ def get_user_recommendations(user_id: int, db: sqlite3.Connection = Depends(get_
             m.title,
             m.genres,
             m.year,
+            m.poster_path,
             ur.score
         FROM user_recommendations ur
         JOIN movies m ON m.movie_id = ur.movie_id

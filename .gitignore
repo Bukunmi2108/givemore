@@ -1,5 +1,6 @@
 plan.md
 data/
+.env
 .venv/
 __pycache__/
 .python-version

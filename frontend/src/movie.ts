@@ -1,6 +1,6 @@
 import "./style.css";
 import { getMovie, getSimilar } from "./api";
-import { renderList, renderSkeletons, similarLabel } from "./render";
+import { heroLinks, poster, renderList, renderSkeletons, similarLabel } from "./render";
 import type { MovieDetail } from "./api";
 
 function requireElement<T extends Element>(selector: string): T {
@@ -15,6 +15,7 @@ const els = {
   error: requireElement<HTMLElement>("#movie-error"),
   errorMessage: requireElement<HTMLElement>("#movie-error-message"),
   hero: requireElement<HTMLElement>("#movie-hero"),
+  heroPoster: requireElement<HTMLElement>("#hero-poster"),
   heroTitle: requireElement<HTMLElement>("#hero-title"),
   heroMeta: requireElement<HTMLElement>("#hero-meta"),
   similarPanel: requireElement<HTMLElement>("#similar-panel"),
@@ -31,9 +32,11 @@ function showError(message: string): void {
 
 function renderHero(movie: MovieDetail): void {
   document.title = `${movie.title} — givemore`;
+  poster(movie, els.heroPoster, "w500");
   els.heroTitle.textContent = movie.title;
   const parts = [movie.year == null ? "" : String(movie.year), movie.genres.join(" · ")];
   els.heroMeta.textContent = parts.filter(Boolean).join("  ·  ");
+  els.heroTitle.parentElement?.append(heroLinks(movie));
 }
 
 async function init(): Promise<void> {

@@ -8,16 +8,22 @@ def split_genres(genres: str) -> list[str]:
     return [] if genres == "(no genres listed)" else genres.split("|")
 
 
-class MovieDetail(BaseModel):
+class MovieSummary(BaseModel):
     movie_id: int
     title: str
     genres: list[str]
     year: int | None
+    poster_path: str | None  # TMDB path ("/abc.jpg"); frontend prefixes image.tmdb.org/t/p/{size}
 
 
-class MovieItem(MovieDetail):
+class MovieItem(MovieSummary):
     rank: int
     score: float
+
+
+class MovieDetail(MovieSummary):
+    imdb_id: str  # zero-padded, e.g. "0114709" -> imdb.com/title/tt0114709/
+    tmdb_id: int | None  # 8 movies have no TMDB id
 
 
 class HealthResponse(BaseModel):
@@ -53,4 +59,4 @@ class SimilarResponse(BaseModel):
 
 class SearchResponse(BaseModel):
     query: str
-    items: list[MovieDetail]
+    items: list[MovieSummary]

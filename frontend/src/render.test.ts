@@ -1,15 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { MovieDetail, Recommendations } from "./api";
-import { movieCard, recLabel, renderList, setAppState } from "./render";
+import type { MovieDetail, MovieSummary, Recommendations } from "./api";
+import { heroLinks, movieCard, recLabel, renderList, setAppState } from "./render";
 
 function installTemplate(): void {
   document.body.innerHTML = `
     <template id="movie-card">
       <a class="movie-card">
-        <span class="mc-rank"></span>
-        <h3 class="mc-title"></h3>
-        <p class="mc-year"></p>
-        <p class="mc-genres"></p>
+        <div class="mc-poster"></div>
+        <div class="mc-scrim">
+          <span class="mc-rank"></span>
+          <h3 class="mc-title"></h3>
+          <p class="mc-year"></p>
+          <p class="mc-genres"></p>
+        </div>
       </a>
     </template>
   `;
@@ -21,11 +24,12 @@ describe("render helpers", () => {
   });
 
   it("renders movie cards with title, year, genres, and data attributes", () => {
-    const movie: MovieDetail = {
+    const movie: MovieSummary = {
       movie_id: 1,
       title: "Toy Story",
       genres: ["Adventure", "Animation"],
       year: 1995,
+      poster_path: "/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg",
     };
 
     const card = movieCard(movie);
@@ -43,6 +47,7 @@ describe("render helpers", () => {
       title: "Yearless",
       genres: ["Drama"],
       year: null,
+      poster_path: null,
     });
 
     expect(card.textContent).not.toContain("null");
@@ -54,6 +59,7 @@ describe("render helpers", () => {
       title: "No Genre",
       genres: [],
       year: 2001,
+      poster_path: null,
     });
 
     expect(card.textContent).not.toContain("(no genres listed)");
@@ -88,5 +94,68 @@ describe("render helpers", () => {
     renderList(container, []);
 
     expect(container.textContent).toContain("No movies found.");
+  });
+
+  it("builds external links with the zero-padded imdb id", () => {
+    const movie: MovieDetail = {
+      movie_id: 1,
+      title: "Toy Story",
+      genres: ["Adventure"],
+      year: 1995,
+      poster_path: "/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg",
+      imdb_id: "0114709",
+      tmdb_id: 862,
+    };
+
+    const links = heroLinks(movie);
+    const anchors = links.querySelectorAll("a");
+
+    expect(anchors).toHaveLength(2);
+    expect(anchors[0].getAttribute("href")).toBe("https://www.imdb.com/title/tt0114709/");
+    expect(anchors[0].getAttribute("rel")).toBe("noopener noreferrer");
+    expect(anchors[1].getAttribute("href")).toBe("https://www.themoviedb.org/movie/862");
+  });
+
+  it("omits the tmdb link when tmdb_id is null", () => {
+    const links = heroLinks({
+      movie_id: 791,
+      title: "The Last Klezmer",
+      genres: ["Documentary"],
+      year: 1994,
+      poster_path: null,
+      imdb_id: "0113610",
+      tmdb_id: null,
+    });
+
+    const anchors = links.querySelectorAll("a");
+    expect(anchors).toHaveLength(1);
+    expect(anchors[0].textContent).toContain("IMDb");
+  });
+
+  it("renders a lazy poster image from the TMDB CDN", () => {
+    const card = movieCard({
+      movie_id: 1,
+      title: "Toy Story",
+      genres: ["Adventure"],
+      year: 1995,
+      poster_path: "/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg",
+    });
+
+    const img = card.querySelector("img");
+    expect(img?.getAttribute("src")).toBe("https://image.tmdb.org/t/p/w342/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg");
+    expect(img?.getAttribute("loading")).toBe("lazy");
+  });
+
+  it("renders a placeholder instead of an image when poster_path is null", () => {
+    const card = movieCard({
+      movie_id: 791,
+      title: "The Last Klezmer",
+      genres: ["Documentary"],
+      year: 1994,
+      poster_path: null,
+    });
+
+    expect(card.querySelector("img")).toBeNull();
+    expect(card.querySelector(".poster-empty")?.textContent).toBe("T");
   });
 });
